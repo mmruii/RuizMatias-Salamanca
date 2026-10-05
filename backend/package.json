@@ -4,11 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prestart": "npm --prefix ../frontend run build",
     "start": "node src/server.js",
+    "predev": "npm --prefix ../frontend run build",
     "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "test": "node --import ./test/setup.js --test test/*.test.js"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "multer": "^2.4.0",
+    "sharp": "^0.35.5"
   }
 }

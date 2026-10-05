@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
-import { LoaderCircle, Save } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { LoaderCircle, Save, X } from 'lucide-react';
 import FormField from './FormField.jsx';
-import { productPayload, validateProduct } from '../utils/products.js';
+import { productPayload, validatePhoto, validateProduct } from '../utils/products.js';
 import { useNotifications } from './Notifications.jsx';
 
 export default function ProductForm({ product, categories, busy, onSubmit, onCancel }) {
@@ -10,12 +10,46 @@ export default function ProductForm({ product, categories, busy, onSubmit, onCan
     description: product?.description || '',
     category: product?.category || '',
     price: product?.price ?? '',
+    stock: product?.stock ?? 0,
     imageUrl: product?.imageUrl || '',
     available: product?.available ?? true,
   });
   const [errors, setErrors] = useState({});
+  const [photo, setPhoto] = useState(null);
+  const [preview, setPreview] = useState('');
+  const photoRef = useRef(null);
   const formRef = useRef(null);
   const { notify } = useNotifications();
+
+  useEffect(() => {
+    if (!photo) {
+      setPreview('');
+      return;
+    }
+    const url = URL.createObjectURL(photo);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
+
+  function selectPhoto(event) {
+    const file = event.target.files?.[0];
+    const photoError = validatePhoto(file);
+    setErrors((current) => ({ ...current, photo: photoError }));
+    if (photoError) {
+      setPhoto(null);
+      notify(photoError, 'error');
+      event.target.value = '';
+      return;
+    }
+    setPhoto(file || null);
+  }
+
+  function clearPhoto() {
+    setPhoto(null);
+    setValues((current) => ({ ...current, imageUrl: '' }));
+    setErrors((current) => ({ ...current, photo: undefined }));
+    photoRef.current.value = '';
+  }
 
   function change(event) {
     const { name, value, type, checked } = event.target;
@@ -27,13 +61,15 @@ export default function ProductForm({ product, categories, busy, onSubmit, onCan
     event.preventDefault();
     if (busy) return;
     const nextErrors = validateProduct(values);
+    const photoError = validatePhoto(photo);
+    if (photoError) nextErrors.photo = photoError;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       notify('Revisa los campos marcados antes de guardar.', 'error');
       formRef.current.elements.namedItem(Object.keys(nextErrors)[0])?.focus();
       return;
     }
-    onSubmit(productPayload(values));
+    onSubmit(productPayload(values), photo);
   }
 
   return (
@@ -87,14 +123,47 @@ export default function ProductForm({ product, categories, busy, onSubmit, onCan
           error={errors.price}
         />
         <FormField
-          label="URL de imagen"
-          name="imageUrl"
-          type="url"
-          value={values.imageUrl}
+          label="Stock"
+          name="stock"
+          required
+          type="number"
+          min="0"
+          step="1"
+          inputMode="numeric"
+          value={values.stock}
           onChange={change}
-          error={errors.imageUrl}
-          hint="Opcional. Si se omite, se usa una imagen de la categoría."
+          error={errors.stock}
         />
+        <div className="form-field full-width">
+          <label htmlFor="field-photo">Foto del producto</label>
+          <input
+            id="field-photo"
+            name="photo"
+            ref={photoRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={selectPhoto}
+            aria-invalid={Boolean(errors.photo)}
+            aria-describedby={errors.photo ? 'photo-hint photo-error' : 'photo-hint'}
+          />
+          <small id="photo-hint">
+            JPG, PNG o WebP. Máximo 5 MB. Sin foto se usa una imagen de la categoría.
+          </small>
+          {errors.photo && (
+            <small className="field-error" id="photo-error">
+              {errors.photo}
+            </small>
+          )}
+          {(preview || values.imageUrl) && (
+            <div className="photo-preview">
+              <img src={preview || values.imageUrl} alt="Vista previa de la foto del producto" />
+              <button className="button button-secondary" type="button" onClick={clearPhoto}>
+                <X size={16} aria-hidden="true" />
+                Quitar foto
+              </button>
+            </div>
+          )}
+        </div>
         <label className="checkbox-field">
           <input type="checkbox" name="available" checked={values.available} onChange={change} />
           Disponible en la carta

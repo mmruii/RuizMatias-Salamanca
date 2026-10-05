@@ -6,6 +6,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  uploadProductPhoto,
 } from './products.js';
 
 const originalFetch = globalThis.fetch;
@@ -63,4 +64,17 @@ test('no convierte una cancelacion en error de conexion', async () => {
     throw new DOMException('Aborted', 'AbortError');
   };
   await assert.rejects(getProducts(), { name: 'AbortError' });
+});
+
+test('sube fotos sin forzar Content-Type JSON y devuelve la URL del servidor', async () => {
+  const photo = new File(['photo'], 'photo.png', { type: 'image/png' });
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, '/api/uploads');
+    assert.equal(options.method, 'POST');
+    assert.ok(options.body instanceof FormData);
+    assert.equal(options.headers['Content-Type'], undefined);
+    assert.equal(options.body.get('photo').name, 'photo.png');
+    return Response.json({ success: true, data: { imageUrl: '/api/uploads/photo.webp' } });
+  };
+  assert.deepEqual(await uploadProductPhoto(photo), { imageUrl: '/api/uploads/photo.webp' });
 });

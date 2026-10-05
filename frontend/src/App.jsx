@@ -1,5 +1,6 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
+import AdminGate from './components/AdminGate.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
@@ -13,7 +14,23 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="nosotros" element={<AboutPage />} />
         <Route path="productos" element={<ProductsPage />} />
-        <Route path="gestion" element={<ManagePage />} />
+        <Route
+          path="panel-de-control"
+          element={
+            <AdminGate>
+              <ManagePage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="api/products"
+          element={
+            <AdminGate>
+              <ManagePage />
+            </AdminGate>
+          }
+        />
+        <Route path="gestion" element={<Navigate to="/panel-de-control" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

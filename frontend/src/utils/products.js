@@ -23,7 +23,17 @@ export function validateProduct(values) {
   if (!Number.isFinite(Number(values.price)) || Number(values.price) <= 0) {
     errors.price = 'Ingresa un precio mayor que cero.';
   }
-  if (values.imageUrl?.trim()) {
+  if (
+    String(values.stock ?? '').trim() === '' ||
+    !Number.isSafeInteger(Number(values.stock)) ||
+    Number(values.stock) < 0
+  ) {
+    errors.stock = 'Ingresa un stock entero mayor o igual a cero.';
+  }
+  if (
+    values.imageUrl?.trim() &&
+    !/^\/api\/uploads\/[a-f0-9-]+\.webp$/.test(values.imageUrl.trim())
+  ) {
     try {
       const url = new URL(values.imageUrl.trim());
       if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
@@ -40,9 +50,18 @@ export function productPayload(values) {
     description: values.description.trim(),
     category: values.category.trim(),
     price: Number(values.price),
+    stock: Number(values.stock),
     imageUrl: values.imageUrl.trim(),
     available: values.available,
   };
+}
+
+export function validatePhoto(file) {
+  if (!file) return '';
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+    return 'Selecciona una foto JPG, PNG o WebP.';
+  if (file.size > 5 * 1024 * 1024) return 'La foto no puede superar los 5 MB.';
+  return '';
 }
 
 export const formatPrice = (value) =>

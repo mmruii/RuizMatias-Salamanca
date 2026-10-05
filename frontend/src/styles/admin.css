@@ -1,0 +1,19 @@
+.admin-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-password-field {
+  position: relative;
+}
+
+.admin-password-field input {
+  padding-right: 48px;
+}
+
+.password-visibility {
+  position: absolute;
+  right: 3px;
+  top: 23px;
+}

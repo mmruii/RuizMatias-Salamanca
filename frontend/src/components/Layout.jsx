@@ -21,7 +21,8 @@ export default function Layout() {
       '/': 'Inicio',
       '/nosotros': 'Sobre nosotros',
       '/productos': 'Productos',
-      '/gestion': 'Gestión',
+      '/panel-de-control': 'Panel de control',
+      '/api/products': 'Panel de control',
     };
     document.title = `${titles[location.pathname] || 'Página no encontrada'} | Salamanca`;
   }, [location.pathname]);
@@ -62,7 +63,6 @@ export default function Layout() {
             </NavLink>
             <NavLink to="/nosotros">Sobre nosotros</NavLink>
             <NavLink to="/productos">Productos</NavLink>
-            <NavLink to="/gestion">Gestión</NavLink>
             <a
               className="button button-primary reservation"
               href={site.reservationLink}
@@ -114,11 +114,10 @@ export default function Layout() {
             <Link to="/productos">
               Ver nuestra carta <ArrowUpRight size={16} aria-hidden="true" />
             </Link>
-            <Link to="/gestion">Gestión de productos</Link>
           </div>
         </div>
         <div className="footer-bottom">
-          © {new Date().getFullYear()} Salamanca · San Martín, Buenos Aires
+          <span>© {new Date().getFullYear()} Salamanca · San Martín, Buenos Aires</span>
         </div>
       </footer>
     </>

@@ -1,30 +1,7 @@
-const API_URL = `${(import.meta.env?.VITE_API_URL || '/api').replace(/\/$/, '')}/products`;
+import { request } from './api.js';
 
-export async function requestProducts(path = '', options = {}) {
-  let response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-    });
-  } catch (error) {
-    if (error.name === 'AbortError') throw error;
-    throw new Error('No pudimos conectar con el servidor. Intenta nuevamente.');
-  }
-
-  let result;
-  try {
-    result = await response.json();
-  } catch {
-    throw new Error('El servidor envio una respuesta no valida.');
-  }
-
-  if (!response.ok || result.success !== true) {
-    throw new Error(
-      result.message || result.error?.message || 'No se pudo completar la operacion.',
-    );
-  }
-  return result.data;
+export function requestProducts(path = '', options = {}) {
+  return request(`/products${path}`, options);
 }
 
 export function getProducts(signal) {
@@ -48,4 +25,10 @@ export function updateProduct(id, product) {
 
 export function deleteProduct(id) {
   return requestProducts(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function uploadProductPhoto(photo) {
+  const form = new FormData();
+  form.append('photo', photo);
+  return request('/uploads', { method: 'POST', body: form });
 }

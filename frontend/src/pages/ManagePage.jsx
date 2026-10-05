@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react';
+import { LoaderCircle, LogOut, Pencil, Plus, Trash2 } from 'lucide-react';
 import PageHeading from '../components/PageHeading.jsx';
 import ProductFilters from '../components/ProductFilters.jsx';
 import ContentState from '../components/ContentState.jsx';
@@ -8,11 +8,14 @@ import ProductForm from '../components/ProductForm.jsx';
 import ProductPhoto from '../components/ProductPhoto.jsx';
 import { useProducts } from '../components/ProductsProvider.jsx';
 import { useNotifications } from '../components/Notifications.jsx';
+import { useAdmin } from '../components/AdminProvider.jsx';
 import { filterProducts, formatPrice } from '../utils/products.js';
+import { uploadProductPhoto } from '../services/products.js';
 
 export default function ManagePage() {
   const { products, loading, error, retry, saveProduct, removeProduct } = useProducts();
   const { notify } = useNotifications();
+  const { logout, expire } = useAdmin();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [editor, setEditor] = useState(null);
@@ -21,14 +24,19 @@ export default function ManagePage() {
   const filtered = filterProducts(products, search, category);
   const categories = [...new Set(products.map((product) => product.category))];
 
-  async function save(values) {
+  async function save(values, photo) {
     setBusy(true);
     try {
-      await saveProduct(values, editor.product?.id);
+      const image = photo ? await uploadProductPhoto(photo) : null;
+      await saveProduct(
+        image ? { ...values, imageUrl: image.imageUrl } : values,
+        editor.product?.id,
+      );
       setEditor(null);
       setSearch('');
       setCategory('');
     } catch (failure) {
+      if (failure.status === 401) expire();
       notify(failure.message, 'error');
     } finally {
       setBusy(false);
@@ -44,6 +52,19 @@ export default function ManagePage() {
       if (category && products.filter((product) => product.category === category).length === 1)
         setCategory('');
     } catch (failure) {
+      if (failure.status === 401) expire();
+      notify(failure.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signOut() {
+    setBusy(true);
+    try {
+      await logout();
+      notify('Sesión de administrador cerrada.');
+    } catch (failure) {
       notify(failure.message, 'error');
     } finally {
       setBusy(false);
@@ -54,18 +75,29 @@ export default function ManagePage() {
     <section className="section container management">
       <PageHeading
         eyebrow="Administración"
-        title="Gestión de productos"
+        title="Panel de control"
         description="La carta de Salamanca, al día."
         action={
-          <button
-            className="button button-primary"
-            type="button"
-            onClick={() => setEditor({ product: null })}
-            disabled={loading || Boolean(error)}
-          >
-            <Plus size={18} aria-hidden="true" />
-            Nuevo producto
-          </button>
+          <div className="admin-heading-actions">
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={busy}
+              onClick={signOut}
+            >
+              <LogOut size={17} aria-hidden="true" />
+              Cerrar sesión
+            </button>
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={() => setEditor({ product: null })}
+              disabled={loading || Boolean(error) || busy}
+            >
+              <Plus size={18} aria-hidden="true" />
+              Nuevo producto
+            </button>
+          </div>
         }
       />
       <div className="management-summary">
@@ -112,6 +144,7 @@ export default function ManagePage() {
                 <th scope="col">Producto</th>
                 <th scope="col">Categoría</th>
                 <th scope="col">Precio</th>
+                <th scope="col">Stock</th>
                 <th scope="col">Estado</th>
                 <th scope="col" className="actions-column">
                   Acciones
@@ -132,6 +165,7 @@ export default function ManagePage() {
                   </th>
                   <td>{product.category}</td>
                   <td className="price">{formatPrice(product.price)}</td>
+                  <td>{product.stock}</td>
                   <td>
                     <span className={`availability ${product.available ? 'is-available' : ''}`}>
                       {product.available ? 'Disponible' : 'No disponible'}

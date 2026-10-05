@@ -4,12 +4,13 @@ import { Messages } from "../enums/Messages.js";
 const requiredTextFields = ["name", "description", "category"];
 
 export default class Product {
-  constructor({ id, name, description, category, price, imageUrl = "", available = true }) {
+  constructor({ id, name, description, category, price, stock = 0, imageUrl = "", available = true }) {
     this.id = id;
     this.name = name;
     this.description = description;
     this.category = category;
     this.price = price;
+    this.stock = stock;
     this.imageUrl = imageUrl;
     this.available = available;
   }
@@ -30,6 +31,10 @@ export default class Product {
     }
 
     if (!Number.isFinite(normalizedData.price) || normalizedData.price <= 0) {
+      throw new BadRequestError(Messages.INVALID_DATA);
+    }
+
+    if (normalizedData.stock !== undefined && (!Number.isSafeInteger(normalizedData.stock) || normalizedData.stock < 0)) {
       throw new BadRequestError(Messages.INVALID_DATA);
     }
 
